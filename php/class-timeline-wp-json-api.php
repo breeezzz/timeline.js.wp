@@ -90,7 +90,7 @@ if(!class_exists(Timeline_WP_JSON_API)){
           'asset' => array(
             'media' => !empty($event_media) ? $event_media : '',
             'credit' => !empty($event_credit) ? $event_credit : '',
-            'caption' => !empty($event_credit) ? $event_caption : '',
+            'caption' => !empty($event_caption) ? $event_caption : ''
           )
         );
 
