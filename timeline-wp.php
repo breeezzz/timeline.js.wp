@@ -11,27 +11,25 @@ Author URI: http://kylereicks.me
 if(!class_exists('Timeline_WP')){
   class Timeline_WP{
 
+    private $timeline_args = array();
+
     function __construct(){
       require('php/class-timeline-wp-post-type.php');
 
       add_action('wp_enqueue_scripts', array($this, 'timeline_scripts'));
 
+      add_action('wp_footer', array($this, 'localize_timeline_data'));
+
       $timeline_wp_post_type = new Timeline_WP_Post_Type();
 
-      $this->make_shortcodes();
+      add_shortcode('timeline_js', array($this, 'timeline_shortcode'));
     }
 
-    private function make_shortcodes(){
-      $timelines = get_terms('timeline_wp_timelines');
-
-      foreach($timelines as $timeline){
-        add_shortcode('timeline_js', array($this, 'timeline_shortcode'));
-      }
+    function localize_timeline_data(){
+      wp_localize_script('timeline_js_activation', 'timelines', $this->timeline_args);
     }
 
     function timeline_shortcode($atts){
-      $timeline_atts = array();
-
       extract(shortcode_atts(array(
         'timeline' => '',
         'width' => '100%',
@@ -39,32 +37,22 @@ if(!class_exists('Timeline_WP')){
       ), $atts));
 
       if(!empty($timeline)){
-        $timeline_atts['type'] = 'timeline';
+        wp_enqueue_script('timeline_js_activation');
         $src = plugins_url('data/json.php?timeline=' . $timeline, __FILE__);
-        $timeline_atts['embed_id'] = 'timeline-' . $timeline;
-        $timeline_atts['width'] = $width;
-        $timeline_atts['height'] = $height;
-
+        $this->timeline_args[] = array(
+          'timeline' => 'timeline_' . $timeline,
+          'src' => $src,
+          'width' => $width,
+          'height' => $height
+        );
         $output = '<div id="timeline_' . $timeline .'"></div>';
-        $output .= '<script>
-          jQuery(function($){
-            createStoryJS({
-              type: \'timeline\',
-                width: \'' . $width . '\',
-                height: \'' . $height . '\',
-                source: \'' . $src . '\',
-                embed_id: \'timeline_' . $timeline . '\'
-            });
-          });
-        </script>';
-
         return $output;
       }
     }
 
     function timeline_scripts(){
-      wp_register_script('timeline_js', plugins_url('timeline.js/js/storyjs-embed.js', __FILE__), array('jquery'), false, false);
-      wp_enqueue_script('timeline_js');
+      wp_register_script('timeline_js', plugins_url('timeline.js/js/storyjs-embed.js', __FILE__), array('jquery'), false, true);
+      wp_register_script('timeline_js_activation', plugins_url('js/timeline-activation.js', __FILE__), array('timeline_js'), false, true);
     }
   }
   $timeline_wp = new Timeline_WP();
